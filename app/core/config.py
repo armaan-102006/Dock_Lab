@@ -1,13 +1,6 @@
-from pydantic import BaseSettings
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
-class Settings(BaseSettings):
-    app_name: str = "Dock Lab"
-    debug: bool = False
-    database_url: str = "sqlite:///./docklab.db"
-
-    class Config:
-        env_file = ".env"
-
-
-settings = Settings()
+SECRET_KEY=os.getenv("SECRET_KEY")
