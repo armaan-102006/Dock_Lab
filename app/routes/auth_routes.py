@@ -6,7 +6,12 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException,status, Depends, OAuth2PasswordRequestForm
 from core.security import oauth2_scheme
 
-router = APIRouter(prefix="/", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+@router.post("/create")
+def create(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
+    auth_service.create_user(email=form_data.username,password=form_data.password,db=db)
+    return auth_service.login_for_refresh_token(email=form_data.username,password=form_data.password,db=db)
 
 @router.post("/login")
 def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
