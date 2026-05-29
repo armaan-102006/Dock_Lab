@@ -1,7 +1,9 @@
 from fastapi import FastAPI
+import socketio
 
-app = FastAPI()
-
+fapp = FastAPI()
+sio = socketio.AsyncServer()
+app = socketio.ASGIApp(sio,fapp)
 
 @app.get("/")
 def read_root():

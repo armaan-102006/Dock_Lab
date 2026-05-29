@@ -10,6 +10,12 @@ from schemas.user_schema import TokenData
 from datetime import timedelta
 from typing import Annotated, Optional
 
+def create_user(email,password,db):#integrate database
+    if email in db:
+        return "Email already present"
+    else:
+        "save new user to database"
+
 def get_user(email: str, db: Session) -> Optional[User]:
     return db.query(User).filter(User.email == email).first()
 
@@ -23,7 +29,7 @@ def authenticate_user(email:str, password:str, db: Session ):
             return user
     return None
 
-async def login_for_refresh_token(email,password,db):
+def login_for_refresh_token(email,password,db):
     user = authenticate_user(email, password, db)
     if not user:
         raise HTTPException(
@@ -117,3 +123,25 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+def get_socket_user(token, db: Session=Depends(get_db)):#get_user is not async which is needed for sockets, make aiomysql db session for this
+    try:# there wil be two diffeent gb sessions one sync for fastapi and one async for socketio
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print("JWT payload:", payload)
+        email = payload.get("sub")
+        type_token=payload.get('type')
+        if email is None:
+            raise  ConnectionRefusedError("unauthorized")
+        token_data = TokenData(email=email)
+
+    except InvalidTokenError:
+        raise  ConnectionRefusedError("unauthorized")
+    
+    if type_token=="access":
+        user = get_user(email=token_data.email, db=db)
+        print("DB lookup for email:", token_data.email, "->", bool(user))
+        if user is None:
+            raise  ConnectionRefusedError("unauthorized")
+        return user
+    else:
+         raise  ConnectionRefusedError("unauthorized")
