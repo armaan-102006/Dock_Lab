@@ -20,3 +20,7 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Sessio
 @router.post("/renew")
 def renew(token: Annotated[str, Depends(oauth2_scheme)], db: Session=Depends(get_db)):
     return auth_service.renew_tokens(token=token,db=db)
+
+@router.post("/logout")
+def logout():
+    auth_service.logging_out()
