@@ -1,10 +1,9 @@
-from typing import Generator
+from pymongo import MongoClient
+
+client = MongoClient("mongodb://127.0.0.1:27017")
+
+db = client["docklab"]
 
 
-def get_db() -> Generator:
-    """Placeholder DB dependency. Replace with real DB session."""
-    db = None
-    try:
-        yield db
-    finally:
-        pass
+def get_db():
+    return db
