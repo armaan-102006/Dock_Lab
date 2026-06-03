@@ -2,28 +2,28 @@ from main import sio
 import asyncio
 from auth_service import get_socket_user
 from docker_service import (
-    send,
+    recieve,
     sockets
 )
 from concurrent.futures import ThreadPoolExecutor
 
-
+#add disconnect, which will remove containerid of the given user from database and from sockets dictionary
 executor = ThreadPoolExecutor(max_workers=200)
 @sio.event
 async def connect(sid, environ,auth):
     token=auth.get('token')
-    print(sid,"connected")
     user=get_socket_user(token=token)#most user data from database especially container id, also add database to argument
     asyncio.create_task(send_data(sid))#try to understand
-    sio.emit(user.container_id,to=sid)
-    sio.save_session(sid, user)
+    await sio.emit(user.container_id,to=sid)
+    print(sid,"connected")
+    await sio.save_session(sid, user)
 
 @sio.event
 async def recieve_data(sid,data):
     user=sio.get_session(sid)
     container_id=user.container_id
     sock=sockets[container_id][0]
-    await recieve_data(sock=sock,data=data)
+    await recieve(sock=sock,data=data)
 
 @sio.event
 async def send_data(sid):
@@ -37,3 +37,8 @@ async def send_data(sid):
         if not data:
             break
         await sio.emit("result", data, to=sid)
+        
+@sio.event
+async def disconnect(sid):
+    user=sio.get_session(sid)
+    container_id=user.container_id

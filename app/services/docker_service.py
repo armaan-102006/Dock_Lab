@@ -3,7 +3,7 @@ import docker
 client=docker.from_env()
 global sockets
 sockets={}
-
+#add cpu/ram limit to docker
 def container():
     image=client.images.get("test_container")
     container=client.containers.run(image, detach=True, tty=True, command="sleep infinity", stdin_open=True)

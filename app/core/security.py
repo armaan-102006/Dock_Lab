@@ -10,7 +10,7 @@ iss
 aud
 iat'''
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 ALGORITHM = "HS256"
 
 password_hash = PasswordHash.recommended()
