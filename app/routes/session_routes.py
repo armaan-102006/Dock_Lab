@@ -8,7 +8,7 @@ router = APIRouter(prefix="/session", tags=["sessions"])
 @router.get("/")
 def create_session(user = Depends(get_current_active_user)):#create a socketio session with frontend
     user=get_current_active_user()
-    if user.container_id:#check for containerid existance in database
+    if user.container_id:
         return "session already in progress"
     else:
         container_id=container()#add container id to database of related user
