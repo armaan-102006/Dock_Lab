@@ -1,11 +1,12 @@
 from fastapi import APIRouter
+from fastapi import Depends
 from services.auth_service import get_current_active_user
 from services.docker_service import *
 router = APIRouter(prefix="/session", tags=["sessions"])
 
 
 @router.get("/")
-def create_session():#create a socketio session with frontend
+def create_session(user = Depends(get_current_active_user)):#create a socketio session with frontend
     user=get_current_active_user()
     if user.container_id:#check for containerid existance in database
         return "session already in progress"
