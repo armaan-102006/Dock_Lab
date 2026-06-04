@@ -47,7 +47,7 @@ def login_for_refresh_token(email,password,db):
     access_token=create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    
+    user.disabled=False
     return  {
   "access_token": access_token,
   "refresh_token": refresh_token,
@@ -90,7 +90,7 @@ def renew_tokens(token, db):
         raise credentials_exception
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session=Depends(get_db)):
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session=Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -103,28 +103,31 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Se
         type_token=payload.get('type')
         if email is None:
             raise credentials_exception
-        token_data = TokenData(email=email)
 
     except InvalidTokenError:
         raise credentials_exception
     
     if type_token=="access":
-        user = get_user(email=token_data.email, db=db)
-        print("DB lookup for email:", token_data.email, "->", bool(user))
+        user = get_user(email=email, db=db)
+        print("DB lookup for email:", email, "->", bool(user))
         if user is None:
             raise credentials_exception
         return user
     else:
          raise credentials_exception
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)):
+def get_current_active_user(current_user: User = Depends(get_current_user)):
     if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
-def get_socket_user(token, db: Session=Depends(get_db)):#get_user is not async which is needed for sockets, make aiomysql db session for this
+def logging_out():
+    user=get_current_active_user()
+    user.disabled=True
+
+async def get_socket_user(token, db: Session=Depends(get_db)):#get_user is not async which is needed for sockets, make aiomysql db session for this
     try:# there wil be two diffeent gb sessions one sync for fastapi and one async for socketio
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         print("JWT payload:", payload)
@@ -145,3 +148,4 @@ def get_socket_user(token, db: Session=Depends(get_db)):#get_user is not async w
         return user
     else:
          raise  ConnectionRefusedError("unauthorized")
+
