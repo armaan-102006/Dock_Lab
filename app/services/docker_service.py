@@ -19,5 +19,5 @@ def recieve(sock,data):
     data.encode('utf-8')#maybe a bit of decoding problem for both send and recieve?
     sock.sendall(data)
 '''(function deprecated, problems listed not.)
-def send(sock):#will be an issue of blocking on production scale
+def send(sock):#will be an issue of blocking on production scale- not anymore, hopefully
     return sock.recv()#xterm will decode automatically on the frontend?'''

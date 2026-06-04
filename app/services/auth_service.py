@@ -10,7 +10,7 @@ from app.schemas.user_schema import TokenData
 from datetime import timedelta
 from typing import Annotated, Optional
 
-def create_user(email,password,db):#integrate database
+def create_user(email,password):#integrate database
     hash_password=get_password_hash(password)
     existing_user = users_collection.find_one({"email": email})
     if existing_user:
@@ -19,7 +19,7 @@ def create_user(email,password,db):#integrate database
     users_collection.insert_one(user.__dict__)
     return "User created successfully"
 
-def get_user(email: str):
+def get_user(email: str):#brings in all user data, there should be a better way like taking argument for feilds required
     user_data = users_collection.find_one({"email": email})
     return User(**user_data)#user model should have _id in it
 
