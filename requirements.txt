@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+python-multipart
+pymongo
+python-jose
+passlib[bcrypt]
+docker
+python-dotenv
+websockets
+PyJWT
+pwdlib[argon2]
+python-socketio
+eventlet
