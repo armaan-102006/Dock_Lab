@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi import Depends
-from services.auth_service import get_current_active_user
-from services.docker_service import *
+from app.services.auth_service import get_current_active_user
+from app.services.docker_service import *
 router = APIRouter(prefix="/session", tags=["sessions"])
 
 
