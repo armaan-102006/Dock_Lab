@@ -9,6 +9,8 @@ from app.models.user import User
 from app.schemas.user_schema import TokenData
 from datetime import timedelta
 from typing import Annotated, Optional
+from app.core.async_collections import users_collection as async_users_collection
+
 
 def create_user(email,password):#integrate database
     hash_password=get_password_hash(password)
@@ -157,7 +159,9 @@ async def get_socket_user(token):
     except InvalidTokenError:
         raise ConnectionRefusedError("unauthorized")
     if type_token == "access":
-        user = get_user(email=email)
+        user = await async_users_collection.find_one(
+            {"email": email}
+        )
         print(
             "DB lookup for email:",
             email,
