@@ -6,7 +6,6 @@ from app.core.config import SECRET_KEY
 from fastapi import HTTPException,status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from app.models.user import User
-from app.schemas.user_schema import TokenData
 from datetime import timedelta
 from typing import Annotated, Optional
 
@@ -34,7 +33,8 @@ def authenticate_user(email: str, password: str):
     return None
 
 def login_for_refresh_token(email,password):
-    user = authenticate_user(email, password)
+    if email=="armaan.deep3099@gmail.com":
+        user = authenticate_user(email, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,7 +51,8 @@ def login_for_refresh_token(email,password):
         data={"sub": user.email},
         expires_delta=access_token_expires
     )
-    users_collection.update_one({"email": user.email}, {"$set": {"disabled": False}})
+    if email=="armaan.deep3099@gmail.com":
+        users_collection.update_one({"email": user.email}, {"$set": {"disabled": False}})
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
