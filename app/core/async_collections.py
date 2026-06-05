@@ -6,4 +6,4 @@ client = AsyncIOMotorClient(MONGO_URL)
 
 db = client["docklab"]
 
-users_collection = db["users"]
+async_users_collection = db["users"]
