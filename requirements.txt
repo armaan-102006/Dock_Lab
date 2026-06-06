@@ -12,3 +12,4 @@ PyJWT
 pwdlib[argon2]
 python-socketio
 eventlet
+motor
