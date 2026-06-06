@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.models.user import User
 from datetime import timedelta
 from typing import Annotated, Optional
-from app.core.async_collections import users_collection as async_users_collection
+from app.core.async_collections import async_users_collection
 
 
 def create_user(email,password):#integrate database
@@ -21,7 +21,7 @@ def create_user(email,password):#integrate database
     return "User created successfully"
 
 def get_user(email: str):#brings in all user data, there should be a better way like taking argument for feilds required
-    user_data = users_collection.find_one({"email": email})
+    user_data = users_collection.find_one({"email": email} ,{"_id": 0})
     return User(**user_data)#user model should have _id in it
 
 def authenticate_user(email: str, password: str):
@@ -35,8 +35,7 @@ def authenticate_user(email: str, password: str):
     return None
 
 def login_for_refresh_token(email,password):
-    if email=="armaan.deep3099@gmail.com":
-        user = authenticate_user(email, password)
+    user = authenticate_user(email, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,8 +52,7 @@ def login_for_refresh_token(email,password):
         data={"sub": user.email},
         expires_delta=access_token_expires
     )
-    if email=="armaan.deep3099@gmail.com":
-        users_collection.update_one({"email": user.email}, {"$set": {"disabled": False}})
+    users_collection.update_one({"email": user.email}, {"$set": {"disabled": False}})
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -133,6 +131,7 @@ def get_current_user(
 
 def get_current_active_user(current_user: User = Depends(get_current_user)):
     if current_user is None:
+        print("hereee")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
@@ -174,4 +173,3 @@ async def get_socket_user(token):
         return user
     else:
         raise ConnectionRefusedError("unauthorized")
-

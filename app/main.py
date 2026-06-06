@@ -3,9 +3,9 @@ import socketio
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.auth_routes import router as auth_router 
 from app.routes.session_routes import router as session_router 
+from app.services.session_service import sio
 
 fapp = FastAPI()
-
 
 origins = [
     "https://test-frontend-ashy-zeta.vercel.app"
@@ -22,6 +22,5 @@ fapp.add_middleware(
 fapp.include_router(auth_router)
 fapp.include_router(session_router)
 
-sio = socketio.AsyncServer()
-app = socketio.ASGIApp(sio,fapp)
+app = socketio.ASGIApp(sio,other_asgi_app=fapp)
 
