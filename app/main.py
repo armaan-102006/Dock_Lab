@@ -3,7 +3,7 @@ import socketio
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.auth_routes import router as auth_router 
 from app.routes.session_routes import router as session_router 
-from app.services.session_service import sio
+from app.services.server_setup.session_service import sio
 
 fapp = FastAPI()
 
