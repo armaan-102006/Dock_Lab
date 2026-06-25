@@ -21,6 +21,3 @@ fapp.add_middleware(
 
 fapp.include_router(auth_router)
 fapp.include_router(session_router)
-
-app = socketio.ASGIApp(sio,other_asgi_app=fapp)
-
