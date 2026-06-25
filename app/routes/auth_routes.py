@@ -4,9 +4,16 @@ from typing import Annotated, Optional
 from fastapi import HTTPException,status
 from fastapi.security import OAuth2PasswordRequestForm  
 from app.core.security import oauth2_scheme
+from app.models.user import User
+from app.services.auth_service import get_current_active_user,authenticate_token
+from fastapi import Body
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
+@router.post('/user_auth')
+async def authenticate(user_token:str = Body(...,embed=True), user: User=Depends(get_current_active_user)):#here the dependency is sync in an async function, i might need to make an async version of this function
+    email=authenticate_token(user_token)
+    #check for the email in database asynchronously if it exists, return True, else False
+    
 @router.post("/create")
 def create(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     auth_service.create_user(email=form_data.username,password=form_data.password)
