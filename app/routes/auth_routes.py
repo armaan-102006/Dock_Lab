@@ -12,7 +12,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post('/user_auth')
 async def authenticate(user_token:str = Body(...,embed=True), user: User=Depends(get_current_active_user)):#here the dependency is sync in an async function, i might need to make an async version of this function
     email=authenticate_token(user_token)
-    #check for the email in database asynchronously if it exists, return True, else False
+    #check for the email in database asynchronously if it exists, return active or inactive container, else False and put container_id as active in database - format = {exists: (true/false), container : active/inactive}
     
 @router.post("/create")
 def create(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):

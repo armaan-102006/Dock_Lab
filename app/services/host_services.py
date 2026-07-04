@@ -1,4 +1,4 @@
-from services.auth_service import get_current_active_user
+from app.services.auth_service import get_current_active_user
 from fastapi import Depends
 from app.models.user import User
 
