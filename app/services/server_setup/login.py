@@ -21,7 +21,7 @@ def get_credentials():
     return credentials
 
 def login():
-    response=requests.post('server-url/auth/login',data=get_credentials())
+    response=requests.post('https://testproduct.tech/auth/login',data=get_credentials())
     if response.ok:
         tokens=response.json()
         keyring.set_password('dock_lab', "access_token", tokens['access_token'])
@@ -29,7 +29,7 @@ def login():
         subprocess.Popen([sys.executable, 'button.py'])
 
 def create():
-    response=requests.post('server-url/auth/create',data=get_credentials())
+    response=requests.post('https://testproduct.tech/auth/create',data=get_credentials())
     if response.ok:
         tokens=response.json()
         keyring.set_password('dock_lab', "access_token", tokens['access_token'])

@@ -5,6 +5,7 @@ from app.services.server_setup.docker_service import *
 from app.core.collections import users_collection
 from app.models.user import User
 from app.services.host_services import node_url_update
+from app.services.auth_service import authenticate_token
 
 router = APIRouter(prefix="/session", tags=["sessions"])
 
@@ -17,15 +18,10 @@ def get_node_list(user: User= Depends(get_current_active_user)):
 def node_register(url:str = Body(...,embed=True), user: User= Depends(get_current_active_user)):
     node_url_update(url,user=user)
 
-@router.get("/")
-def create_session(user: User= Depends(get_current_active_user)):#create a socketio session with frontend
-    if user.container_id:
-        return "session already in progress"
-    else:
-        container_id=container()#add container id to database of related user
-        print(container_id)
-        users_collection.update_one({"email": user.email}, {"$set": {"container_id": container_id}})
-        return container_id
+@router.get("/remove")
+def remove_session(user_token:str = Body(...,embed=True), user: User= Depends(get_current_active_user)):#create a socketio session with frontend
+    email=authenticate_token(user_token)
+    users_collection.update_one({"email": user.email}, {"$set": {"container_id": "inactive"}})
 
 @router.post("/resize")
 def session_resize(height,width):

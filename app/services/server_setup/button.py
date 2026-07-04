@@ -76,11 +76,11 @@ def start_server():#use pesudo terminal instead of subprocess for better results
             raise RuntimeError("Failed to start tunnel")
 
         response = requests.post(
-            "server_url/auth/user_auth",
+            "https://testproduct.tech/auth/user_auth",
             headers={"Authorization": f"Bearer {token}"},
             json={'url': url[0]}
         )
-        server_startup = subprocess.Popen([sys.executable, '-m', 'uvicorn', 'main:app', '--reload'])
+        server_startup = subprocess.Popen([sys.executable, '-m', 'uvicorn', 'session_service:app', '--reload'])
         connected=True
     threading.Thread(target=start_background, daemon=True).start()
     
