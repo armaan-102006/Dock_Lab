@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends
-from app.services  import auth_service
+from services import auth_service
 from typing import Annotated, Optional
 from fastapi import HTTPException,status
 from fastapi.security import OAuth2PasswordRequestForm  
-from app.core.security import oauth2_scheme
-from app.models.user import User
-from app.services.auth_service import get_current_active_user,authenticate_token
+from core.security import oauth2_scheme
+from models.user import User
+from services.auth_service import get_current_active_user,authenticate_token
 from fastapi import Body
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -27,6 +27,6 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 def renew(token: Annotated[str, Depends(oauth2_scheme)]):
     return auth_service.renew_tokens(token=token)
 
-@router.post("/logout")
-def logout():
-    auth_service.logging_out()
+@router.get("/logout")
+def logout(user : User = Depends(get_current_active_user)):
+    return auth_service.logging_out(user)

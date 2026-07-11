@@ -1,14 +1,14 @@
-from app.core.security import get_password_hash,create_access_token,create_refresh_token,verify_password,oauth2_scheme,ALGORITHM
-from app.core.collections import users_collection
+from core.security import get_password_hash,create_access_token,create_refresh_token,verify_password,oauth2_scheme,ALGORITHM
+from core.collections import users_collection
 from jwt.exceptions import InvalidTokenError
 import jwt
-from app.core.config import SECRET_KEY
+from core.config import SECRET_KEY
 from fastapi import HTTPException,status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from app.models.user import User
+from models.user import User
 from datetime import timedelta
 from typing import Annotated, Optional
-from app.core.async_collections import async_users_collection
+from core.async_collections import async_users_collection
 
 
 def create_user(email,password):#integrate database
@@ -136,8 +136,7 @@ def get_current_active_user(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
-def logging_out():
-    user = get_current_active_user()
+def logging_out(user):
     users_collection.update_one({"email": user.email}, {"$set": {"disabled": True}})
     return {
         "message": "Logged out successfully"
