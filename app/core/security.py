@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import uuid
 import jwt
 from pwdlib import PasswordHash
-from app.core.config import SECRET_KEY
+from core.config import SECRET_KEY
 
 '''Must add
 iss

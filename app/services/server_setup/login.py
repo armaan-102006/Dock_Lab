@@ -3,6 +3,7 @@ import requests
 import keyring
 import subprocess
 import sys
+import os
 
 root=Tk()
 root.title("server starter")
@@ -26,7 +27,8 @@ def login():
         tokens=response.json()
         keyring.set_password('dock_lab', "access_token", tokens['access_token'])
         keyring.set_password('dock_lab', "refresh_token", tokens['refresh_token'])
-        subprocess.Popen([sys.executable, 'button.py'])
+        base_dir = os.path.dirname(sys.executable)
+        subprocess.Popen([os.path.join(base_dir, 'button.exe')])
 
 def create():
     response=requests.post('https://testproduct.tech/auth/create',data=get_credentials())
@@ -34,7 +36,8 @@ def create():
         tokens=response.json()
         keyring.set_password('dock_lab', "access_token", tokens['access_token'])
         keyring.set_password('dock_lab', "refresh_token", tokens['refresh_token'])
-        subprocess.Popen([sys.executable, 'button.py'])
+        base_dir = os.path.dirname(sys.executable)
+        subprocess.Popen([os.path.join(base_dir, 'button.exe')])
 
 e=Button(root,text='login',width=12,command=login).grid(row=2,column=1,columnspan=1)
 

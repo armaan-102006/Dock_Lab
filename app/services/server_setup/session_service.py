@@ -4,11 +4,11 @@ import asyncio
 import functools
 import httpx
 import keyring
-from server_setup.docker_service import (
+from docker_service import (
     recieve,
-    sockets
+    sockets,
+    container
 )
-from server_setup.docker_service import container
 from concurrent.futures import ThreadPoolExecutor
 
 origins = [
@@ -94,7 +94,5 @@ async def disconnect(sid):
             headers={"Authorization": f"Bearer {host_token}"},
             json={'user_token': token}
         )
-    #async_users_collection.update_one({"email": user['email']}, {"$set": {"container_id": None}})        dont think i need container id's after they have are working on different host machines, will later need updates on when a user disconencted tho for data
     print("disconnected")
     del sockets[container_id]
-
