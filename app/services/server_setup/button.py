@@ -10,6 +10,7 @@ import session_service
 import re
 import threading
 from subprocess import TimeoutExpired
+from pathlib import Path
 #kill the processess of popen on close
 #add who the token is issued to in auth, host or user?
 root=Tk()
@@ -26,7 +27,7 @@ def run_server():#AI made me do it | because uvicorn runs in main thread and if 
     uv_server.run()
 
 
-def start_server():#use pesudo terminal instead of subprocess for better results
+def start_server():
     def start_background():
         global server_startup,lt_process,connected
         try:
@@ -37,65 +38,89 @@ def start_server():#use pesudo terminal instead of subprocess for better results
         except NameError:
             connected=False
 
-        output = open('terminal_output.log','w+')
+        key_path = Path.home() / ".ssh" / "dock_lab_host"
+        key_path.parent.mkdir(exist_ok=True)
         token = keyring.get_password('dock_lab','access_token')
-        lt_process = subprocess.Popen(
-            ['ssh', '-R', f'80:localhost:{p.get()}', 'localhost.run'], 
-            stdin=subprocess.PIPE,
-            stdout=output, 
-            stderr=subprocess.DEVNULL,
-            text=True )
-        time.sleep(1)
-        output.seek(0)
-        out = output.read()
-        run = keyring.get_password('dock_lab','first_run')
-
-        if not run or not out:
-            keyring.set_password('dock_lab','first_run',"false")
-            lt_process.stdin.write("yes\n")
-            lt_process.stdin.flush() 
-
-        #if not out:         
         
-            lt_process.terminate()                
-            key_gen = subprocess.Popen(
-            ['ssh-keygen', '-t', 'rsa', '-b', '4096'], 
-            stdin=subprocess.PIPE,
-            stdout=subprocess.DEVNULL, 
-            stderr=subprocess.DEVNULL,
-            text=True )
-            time.sleep(1)
+        if not has_valid_ssh_key(key_path):
 
-            key_gen.stdin.write("\n\n\n")
-            key_gen.stdin.flush() 
+            ssh_out= open('ssh_output.log','w+')
+            ssh_error= open('ssh_error.log','w+')
 
-            lt_process = subprocess.Popen(
-            ['ssh', '-R', f'80:localhost:{p.get()}', 'localhost.run'], 
-            stdin=subprocess.PIPE,
-            stdout=output, 
-            stderr=subprocess.DEVNULL,
-            text=True )
-            time.sleep(1)
-            output.seek(0)
-            key_gen.terminate()
-            out = output.read()
+            subprocess.run([
+                        "ssh-keygen",
+                        "-q",
+                        "-t", "rsa",
+                        "-b", "4096",
+                        "-f", str(key_path),
+                        "-N", "",
+                    ],
+                    stdin=subprocess.DEVNULL,
+                    check=True,
+                    stderr= ssh_error,
+                    stdout= ssh_out,
+                )
 
-        pattern = r"https://.*?\.lhr\.life"
-        url = re.search(pattern=pattern,string=out)
-        if not url:
-            raise RuntimeError("Failed to start tunnel")
+        lt_process = subprocess.Popen(
+                    ["ssh", "-T","-i", str(key_path), "-R", f"80:localhost:{p.get()}",
+                "-o", "StrictHostKeyChecking=accept-new",
+                "-o", "BatchMode=yes",
+                "-o", "ConnectTimeout=15",
+                "nokey@localhost.run",
+            ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.STDOUT,
+                bufsize=1,
+                text=True, )
+        
+        lines = []
+        match= None
+        output_text=""
+        
+        while True:
+            line = lt_process.stdout.readline()
+            if not line:
+                if lt_process.poll() is not None:
+                    break
+                continue
+
+            lines.append(line)
+            output_text = "".join(lines)
+
+            match = re.search(r"https://.*?\.lhr\.life", output_text)
+            if match:
+                break
+
+        if match is None:
+            lt_process.terminate()
+            raise RuntimeError(
+                f"SSH tunnel exited without providing a URL:\n{output_text}"
+            )
+
+        url = match.group(0)
 
         response = requests.post(
             "https://testproduct.tech/session/register",
             headers={"Authorization": f"Bearer {token}"},
-            json={'url': url[0]}
+            json={'url': url}
         )
-        #server_startup = subprocess.Popen([sys.executable, '-m', 'uvicorn', 'app.services.server_setup.session_service:app'])
         server_thread = threading.Thread(target=run_server, daemon=True)
         server_thread.start()
         connected=True
     threading.Thread(target=start_background, daemon=True).start()
-    
+
+def has_valid_ssh_key(key_path: Path) -> bool:
+    if not key_path.is_file() or key_path.stat().st_size == 0:
+        return False
+
+    result = subprocess.run(
+        ["ssh-keygen", "-y", "-P", "", "-f", str(key_path)],
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
 def kill_process():#i am sorry
     global uv_server,lt_process
     lt_process.terminate()
