@@ -28,10 +28,8 @@ def login():
         keyring.set_password('dock_lab', "access_token", tokens['access_token'])
         keyring.set_password('dock_lab', "refresh_token", tokens['refresh_token'])
         base_dir = os.path.dirname(sys.executable)
-
-        subprocess.Popen([sys.executable,r"C:\Users\armaa\Documents\Desktop\Dock_Lab\app\services\server_setup\button.py"])
-
-        #subprocess.Popen([os.path.join(base_dir, 'button.exe')])
+        #subprocess.Popen([sys.executable,r"C:\Users\armaa\Documents\Desktop\Dock_Lab\app\services\server_setup\button.py"])
+        subprocess.Popen([os.path.join(base_dir, 'button.exe')])
 
 def create():
     response=requests.post('https://testproduct.tech/auth/create',data=get_credentials())
@@ -40,6 +38,7 @@ def create():
         keyring.set_password('dock_lab', "access_token", tokens['access_token'])
         keyring.set_password('dock_lab', "refresh_token", tokens['refresh_token'])
         base_dir = os.path.dirname(sys.executable)
+        #subprocess.Popen([sys.executable,r"C:\Users\armaa\Documents\Desktop\Dock_Lab\app\services\server_setup\button.py"])
         subprocess.Popen([os.path.join(base_dir, 'button.exe')])
 
 e=Button(root,text='login',width=12,command=login).grid(row=2,column=1,columnspan=1)

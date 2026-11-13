@@ -1,11 +1,15 @@
 import docker
+from docker.errors import ImageNotFound
 
 client=docker.from_env()
 global sockets
 sockets={}
 #add cpu/ram limit to docker
 def container():
-    image=client.images.get("test_container")
+    try:
+        image=client.images.get("python:3.11-slim")
+    except ImageNotFound:
+        image=client.images.pull("python:3.11-slim")
     container=client.containers.run(image, detach=True, tty=True, command="sleep infinity", stdin_open=True)
     exec_id = client.api.exec_create(container.id,cmd="/bin/bash",stdin=True, stdout=True, stderr=True, tty=True, environment={"TERM": "xterm"})
     sock = client.api.exec_start(exec_id, socket=True)
