@@ -6,7 +6,7 @@ import requests
 import time
 import atexit
 import uvicorn
-import session_service
+from session_service import app
 import re
 import threading
 from subprocess import TimeoutExpired
@@ -21,7 +21,7 @@ p.grid(row=0,column=0,columnspan=3)
 
 def run_server():#AI made me do it | because uvicorn runs in main thread and if i offload it to some other thread, there will be errors so it needs to be stopped from trying to install signal handlers
     global uv_server
-    config = uvicorn.Config(session_service.app, host="127.0.0.1", port=int(p.get()), log_level="info")
+    config = uvicorn.Config(app, host="127.0.0.1", port=int(p.get()), log_level="info")
     uv_server = uvicorn.Server(config)
     uv_server.install_signal_handlers = lambda: None
     uv_server.run()
@@ -44,6 +44,9 @@ def start_server():
         
         if not has_valid_ssh_key(key_path):
 
+            key_path.unlink(missing_ok=True)
+            key_path.with_suffix(".pub").unlink(missing_ok=True)
+            
             ssh_out= open('ssh_output.log','w+')
             ssh_error= open('ssh_error.log','w+')
 
@@ -77,7 +80,7 @@ def start_server():
         lines = []
         match= None
         output_text=""
-        
+
         while True:
             line = lt_process.stdout.readline()
             if not line:
@@ -111,6 +114,8 @@ def start_server():
     threading.Thread(target=start_background, daemon=True).start()
 
 def has_valid_ssh_key(key_path: Path) -> bool:
+    pub_key = key_path.with_suffix(".pub")
+
     if not key_path.is_file() or key_path.stat().st_size == 0:
         return False
 
