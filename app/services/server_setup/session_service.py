@@ -50,7 +50,7 @@ async def connect(sid, environ,auth):
             executor, container
         )
     user['client_token']=token
-    user['container_id']=container_id
+    user['container_id']=container_id#here i am making a local user dictionary which saves container_id which is used to detect whom the information is coming from and who is sending it
     await sio.save_session(sid, user)
     asyncio.create_task(send_data(sid))#try to understand
 
