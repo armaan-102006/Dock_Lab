@@ -3,16 +3,15 @@ import keyring
 import subprocess
 import sys
 import requests
-import time
 import atexit
-import uvicorn
+import uvicorn, httpx
 from session_service import app
-import re
+import re,os,shutil
 import threading
-from subprocess import TimeoutExpired
 from pathlib import Path
 #kill the processess of popen on close
 #add who the token is issued to in auth, host or user?
+
 root=Tk()
 root.title("server starter")
 
@@ -38,60 +37,46 @@ def start_server():
         except NameError:
             connected=False
 
-        key_path = Path.home() / ".ssh" / "dock_lab_host"
-        key_path.parent.mkdir(exist_ok=True)
-        token = keyring.get_password('dock_lab','access_token')
-        
-        if not has_valid_ssh_key(key_path):
-
-            key_path.unlink(missing_ok=True)
-            key_path.with_suffix(".pub").unlink(missing_ok=True)
-            
-            ssh_out= open('ssh_output.log','w+')
-            ssh_error= open('ssh_error.log','w+')
-
-            subprocess.run([
-                        "ssh-keygen",
-                        "-q",
-                        "-t", "rsa",
-                        "-b", "4096",
-                        "-f", str(key_path),
-                        "-N", "",
-                    ],
-                    stdin=subprocess.DEVNULL,
+        base_dir = os.path.dirname(sys.executable)
+        if not os.path.exists(os.path.join(base_dir,'cloudflared.exe')) and not shutil.which('cloudflared.exe'):
+            subprocess.run(
+                    ["winget", "install", "--id", "Cloudflare.cloudflared", "-e",
+                    "--accept-package-agreements", "--accept-source-agreements"],
                     check=True,
-                    stderr= ssh_error,
-                    stdout= ssh_out,
                 )
-
+            kill_process()
+            
+        token = keyring.get_password('dock_lab','access_token')
+   
         lt_process = subprocess.Popen(
-                    ["ssh", "-T","-i", str(key_path), "-R", f"80:localhost:{p.get()}",
-                "-o", "StrictHostKeyChecking=accept-new",
-                "-o", "BatchMode=yes",
-                "-o", "ConnectTimeout=15",
-                "nokey@localhost.run",
-            ],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.STDOUT,
-                bufsize=1,
-                text=True, )
-        
+        ["cloudflared.exe", "tunnel", "--url", f"http://localhost:{p.get()}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
         lines = []
         match= None
         output_text=""
 
-        while True:
+        app_dir = os.path.join(os.getenv('LOCALAPPDATA'), 'DOCK_LAB')
+        os.makedirs(app_dir, exist_ok=True)
+        output_path = os.path.join(app_dir, 'output.txt')
+
+        while True:#write a loop to save logs in a log.txt to keep stdout clean
             line = lt_process.stdout.readline()
             if not line:
                 if lt_process.poll() is not None:
                     break
                 continue
-
             lines.append(line)
+            with open(output_path,"a") as file:
+                file.write(line)
             output_text = "".join(lines)
-
-            match = re.search(r"https://.*?\.lhr\.life", output_text)
+            match = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", output_text)
             if match:
                 break
 
@@ -111,23 +96,26 @@ def start_server():
         server_thread = threading.Thread(target=run_server, daemon=True)
         server_thread.start()
         connected=True
+        while True:
+            line = lt_process.stdout.readline()
+            if lt_process.poll() is not None:
+                print(f"SSH tunnel process exited with code {lt_process.returncode}")
+                with open("output.txt","a") as file:
+                    file.write(line)
+                break
+            with open(output_path,"a") as file:
+                file.write(line)
     threading.Thread(target=start_background, daemon=True).start()
-
-def has_valid_ssh_key(key_path: Path) -> bool:
-    pub_key = key_path.with_suffix(".pub")
-
-    if not key_path.is_file() or key_path.stat().st_size == 0:
-        return False
-
-    result = subprocess.run(
-        ["ssh-keygen", "-y", "-P", "", "-f", str(key_path)],
-        capture_output=True,
-        text=True,
-    )
-    return result.returncode == 0
 
 def kill_process():#i am sorry
     global uv_server,lt_process
+    host_token = keyring.get_password('dock_lab', 'access_token')
+    response = requests.post(
+        "https://testproduct.tech/session/remove_host",
+        headers={"Authorization": f"Bearer {host_token}"}
+    )
+    if response.status_code != 200:
+        raise ConnectionRefusedError("removal of url failed")
     lt_process.terminate()
     if uv_server:
         uv_server.should_exit = True
