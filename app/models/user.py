@@ -10,6 +10,7 @@ class User:
         container_id: Optional[str] = None,
         jti: Optional[str] = None,
         disabled: bool = False,
+        url: Optional[str] = None,
     ):
         self.email = email
         self.hashed_password = hashed_password

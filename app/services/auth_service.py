@@ -22,6 +22,8 @@ def create_user(email,password):#integrate database
 
 def get_user(email: str):#brings in all user data, there should be a better way like taking argument for feilds required
     user_data = users_collection.find_one({"email": email} ,{"_id": 0})
+    if not user_data:
+        raise FileNotFoundError("FOR now just using this error in case of non existent email, will fix")
     return User(**user_data)#user model should have _id in it
 
 def authenticate_user(email: str, password: str):
@@ -77,10 +79,10 @@ def renew_tokens(token):
         if type_token == "refresh" and jti_token == jti_data:
             refresh_token_expires = timedelta(days=30)
             refresh_token, jti = create_refresh_token(
-                data={"sub": user.email},
+                data={"sub": user['email']},
                 expires_delta=refresh_token_expires
             )
-            users_collection.update_one({"email": user.email}, {"$set": {"jti": jti}})
+            users_collection.update_one({"email": user['email']}, {"$set": {"jti": jti}})
             access_token_expires = timedelta(minutes=15)
             access_token = create_access_token(
                 data={"sub": email},
@@ -187,6 +189,8 @@ def authenticate_token(token):
         print("JWT payload:", payload)
         email = payload.get("sub")
         type_token = payload.get("type")
+        if type_token!="access":
+            raise InvalidTokenError("token is not access type")
         if email is None:
             raise credentials_exception
     except InvalidTokenError:
