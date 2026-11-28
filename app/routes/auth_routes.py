@@ -27,7 +27,7 @@ async def authenticate(user_token:str = Body(...,embed=True), user: User=Depends
             {"$set": {"container_id": "active"}},
         )
 
-    return {"exists": True, "container": container_status}
+    return {"exists": True, "email": email, "container": container_status}
     #check for the email in database asynchronously if it exists, return active or inactive container, else False and put container_id as active in database - format = {exists: (true/false), container : active/inactive}
     #this function is being used by the host to authenticate the user and check if the user is already actively using a container or not
 

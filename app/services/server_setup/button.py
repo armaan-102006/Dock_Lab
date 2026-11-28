@@ -4,11 +4,10 @@ import subprocess
 import sys
 import requests
 import atexit
-import uvicorn, httpx
+import uvicorn
 from session_service import app
 import re,os,shutil
 import threading
-from pathlib import Path
 #kill the processess of popen on close
 #add who the token is issued to in auth, host or user?
 

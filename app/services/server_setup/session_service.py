@@ -3,7 +3,14 @@ import docker
 import asyncio
 import functools
 import httpx
-import keyring
+import keyring,os
+from fastapi.responses import FileResponse
+from fastapi import FastAPI,Depends
+from typing import Annotated
+from fastapi.security import OAuth2PasswordBearer
+import shutil
+import tempfile
+from fastapi.middleware.cors import CORSMiddleware
 from docker_service import (
     recieve,
     sockets,
@@ -11,13 +18,24 @@ from docker_service import (
 )
 from concurrent.futures import ThreadPoolExecutor
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
 origins = [
     "https://test-frontend-ashy-zeta.vercel.app"
 ]
 sio = socketio.AsyncServer(async_mode="asgi", 
     cors_allowed_origins=origins
 )
-app = socketio.ASGIApp(sio)
+
+fapp = FastAPI()
+fapp.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app = socketio.ASGIApp(sio,other_asgi_app=fapp)
 
 '''the host will need to send his own tokens along with the client tokens to get the client details for that i will need to access
 the storage where the host frontend stored it's tokens. Also the client side tokens are mostly working but there might be some issue on
@@ -47,7 +65,7 @@ async def connect(sid, environ,auth):
     print(user)
     print(sid,"connected")
     container_id = await asyncio.get_event_loop().run_in_executor(
-            executor, container
+            executor, container, user['email']
         )
     user['client_token']=token
     user['container_id']=container_id#here i am making a local user dictionary which saves container_id which is used to detect whom the information is coming from and who is sending it
@@ -83,10 +101,11 @@ async def disconnect(sid):
     user= await sio.get_session(sid)
     token= user['client_token']
     container_id=user['container_id']
-    await asyncio.get_event_loop().run_in_executor(
+    await asyncio.get_event_loop().run_in_executor(#try to_thread
         None,
-            functools.partial(client.containers.get(container_id).stop)#this is bullshit
+            functools.partial(client.containers.get(container_id).stop)#this is bullshit.
         )
+    await asyncio.to_thread(client.containers.get(container_id).remove)
     host_token = await asyncio.to_thread(keyring.get_password, 'dock_lab', 'access_token')
     async with httpx.AsyncClient() as cli:
         response = await cli.post(
@@ -96,3 +115,29 @@ async def disconnect(sid):
         )
     print("disconnected")
     del sockets[container_id]
+
+#change the system of container_id being inactive and active on user side to give actual in use container or none
+@fapp.get('/download')
+async def download_file(token: Annotated[str, Depends(oauth2_scheme)]):
+    host_token = await asyncio.to_thread(keyring.get_password, 'dock_lab', 'access_token')
+    async with httpx.AsyncClient() as cli:
+        response = await cli.post(
+            "https://testproduct.tech/auth/user_auth",
+            headers={"Authorization": f"Bearer {host_token}"},
+            json={'user_token': token}
+        )
+        if response.status_code != 200:
+            raise ConnectionRefusedError("Authentication failed")
+        user=response.json()
+        if not user['exists']:
+            raise ConnectionRefusedError("Authentication failed") 
+
+        app_dir = os.path.join(os.getenv('LOCALAPPDATA'), 'DOCK_LAB')
+        os.makedirs(app_dir, exist_ok=True)
+        output_path = os.path.join(app_dir, user['email'])
+
+        #packaging all the stuff related to user to send as a zip file
+        zip_base = os.path.join(tempfile.gettempdir(), f"{user['email']}_files")
+        zip_path = await asyncio.to_thread(shutil.make_archive, zip_base, 'zip', output_path)
+        #add a delete folder function after download, also delete the output.txt each session
+        return FileResponse(zip_path, filename=f"{user['email']}_dock_lab_files.zip", media_type="application/zip")

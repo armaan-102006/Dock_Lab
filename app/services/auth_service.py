@@ -4,10 +4,9 @@ from jwt.exceptions import InvalidTokenError
 import jwt
 from core.config import SECRET_KEY
 from fastapi import HTTPException,status, Depends
-from fastapi.security import OAuth2PasswordRequestForm
 from models.user import User
 from datetime import timedelta
-from typing import Annotated, Optional
+from typing import Annotated
 from core.async_collections import async_users_collection
 
 
